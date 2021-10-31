@@ -1,0 +1,157 @@
+<!--
+  @description       :
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             :
+  @last modified on  : 11-01-2021
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
+<template>
+  <div class="slds-grid slds-wrap">
+		<div class="slds-col slds-size_2-of-3">
+			<lightning-card>
+        <div class="slds-p-left_medium slds-scrollable" style="height:30rem">
+          <a onclick={returnToListView}>Back to List</a><br/>
+          <!-- 上の句 start -->
+          <lightning-layout>
+          <lightning-layout-item padding="around-small">
+            <lightning-button variant="Neutral" label={detail.Content} title={detail.Content} onclick={openTopModal} class="slds-m-left_x-small"></lightning-button>
+            <br/><br/>
+            <!-- 中の句 start -->
+            <template for:each={detail.haiku_mid} for:item="mid" for:index="indexMid">
+              <div key={mid.HaikuId}>
+                <lightning-layout key={mid.HaikuId}>
+                  <lightning-layout-item padding="around-small">
+                    <lightning-button variant="Neutral" label={mid.Content} value={mid.HaikuId} title={indexMid}
+                    onclick={openMidModal} class="slds-m-left_x-small" ></lightning-button>
+                  </lightning-layout-item>
+                  <lightning-layout-item padding="around-small">
+                    {mid.VoteTotal}
+                  </lightning-layout-item>
+                  <lightning-layout-item padding="around-small">
+                    <lightning-button-icon-stateful icon-name="utility:like" variant="bare" size="x-small" value={mid.HaikuId} name={indexMid}
+                    selected={mid.IsVoted} onclick={handleLikeButtonClick} alternative-text="Like" disabled={mid.IsVoted}></lightning-button-icon-stateful>
+                  </lightning-layout-item>
+                </lightning-layout>
+                <!-- 下の句 start -->
+                <template for:each={mid.haiku_btm} for:item="btm" for:index="index">
+                  <div key={btm.HaikuId} class="slds-p-left_medium">
+                    <lightning-layout key={btm.HaikuId}>
+                      <lightning-layout-item padding="around-small">
+                        <!-- 中の句の情報をセット中 -->
+                        <lightning-button variant="Neutral" label={btm.Content} name={btm.TranslateContent} value={mid.Content} title={mid.TranslateContent}
+                        onclick={openBtmModal} class="slds-m-left_x-small"></lightning-button>
+                      </lightning-layout-item>
+                      <lightning-layout-item padding="around-small">
+                        {btm.VoteTotal}
+                      </lightning-layout-item>
+                      <lightning-layout-item padding="around-small">
+                        <lightning-button-icon-stateful icon-name="utility:like" variant="bare" size="x-small" value={indexMid} name={index}
+                        selected={btm.IsVoted} onclick={handleLikeButtonClickBtm} alternative-text={mid.HaikuId}  disabled={btm.IsVoted}></lightning-button-icon-stateful>
+                      </lightning-layout-item>
+                    </lightning-layout>
+                  </div>
+                </template>
+                <!-- 下の句 end -->
+              </div>
+            </template>
+            <!-- 中の句 end -->
+            </lightning-layout-item>
+          </lightning-layout>
+        </div>
+
+      <!-- 上の句用モーダル -->
+        <template if:true={isTopModalOpen}>
+          <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+              <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                <p><b><font size = "6">{modalHaiku_Top}</font></b></p>
+                <lightning-input type="text" label="Enter the phrase" name="UpperPhrase" data-name="inputMidContent" onchange={handleMidHaikuChange}>
+                </lightning-input>
+                <!--<lightning-button variant="post" label="投稿" title="post" onclick={midHaikuPost} class=""></lightning-button>-->
+              </div>
+              <footer class="slds-modal__footer">
+                <button class="slds-button slds-button_neutral" onclick={closeTopModal} title="Cancel">Cancel</button>
+                <button class="slds-button slds-button_brand" onclick={midHaikuPost} >Create</button>
+              </footer>
+            </div>
+          </section>
+          <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+        <!-- 中の句用モーダル -->
+        <template if:true={isMidModalOpen}>
+          <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-2" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+              <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-2">
+                <p><b><font size = "6">{modalHaiku_Top}</font></b></p>
+                <p><b><font size = "6">{modalHaiku_Mid}</font></b></p>
+                <lightning-input type="text" label="Enter the phrase" name="UpperPhrase" data-name="inputBtmContent" onchange={handleBtmHaikuChange}>
+                </lightning-input>
+                <!--<lightning-button variant="post" label="投稿" title="post" onclick={btmHaikuPost} class=""></lightning-button>-->
+              </div>
+              <footer class="slds-modal__footer">
+                <button class="slds-button slds-button_neutral" onclick={closeMidModal} title="Cancel">Cancel</button>
+                <button class="slds-button slds-button_brand" onclick={btmHaikuPost} >Create</button>
+              </footer>
+            </div>
+          </section>
+          <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+        <!-- 下の句用モーダル -->
+        <template if:true={isBtmModalOpen}>
+          <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-3" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+              <header class="slds-modal__header">
+                <h1 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Created Haiku</h1>
+              </header>
+              <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-3">
+                <div class="slds-text-heading_small slds-text-align_center">
+                <p><b><font size = "6">{modalHaiku_Top}</font></b></p>
+                <p><b><font size = "6">{modalHaiku_Mid}</font></b></p>
+                <p><b><font size = "6">{modalHaiku_Btm}</font></b></p>
+                <hr>
+                <p><b><font size = "6">{modalHaiku_Tran_Top}</font></b></p>
+                <p><b><font size = "6">{modalHaiku_Tran_Mid}</font></b></p>
+                <p><b><font size = "6">{modalHaiku_Tran_Btm}</font></b></p>
+                </div>
+              </div>
+              <footer class="slds-modal__footer">
+                <button class="slds-button slds-button_neutral" onclick={closeBtmModal} title="Close">Close</button>
+              </footer>
+            </div>
+          </section>
+          <div class="slds-backdrop slds-backdrop_open"></div>
+      </template>
+			</lightning-card>
+		</div>
+		<div class="slds-col slds-size_1-of-3">
+			<lightning-card>
+				<div class="slds-p-around_x-large slds-scrollable"  style="height:25rem">
+          <template for:each={commentList} for:item="cmt">
+              <section key={cmt.HaikuId} role="log" class="slds-chat">
+                  <ul class="slds-chat-list">
+                      <li class="slds-chat-listitem slds-chat-listitem_inbound">
+                      <div class="slds-chat-message">
+                          <div class="slds-chat-message__body">
+                          <div class="slds-chat-message__text slds-chat-message__text_inbound">
+                              <span>{cmt.Comment}</span>
+                          </div>
+                          <div class="slds-chat-message__meta" aria-label="Name and datatime">{cmt.NickName} • {cmt.CreateDate}</div>
+                          </div>
+                      </div>
+                      </li>
+                  </ul>
+              </section>
+          </template>
+        </div>
+        <lightning-layout>
+          <lightning-layout-item padding="around-small">
+            <lightning-textarea data-name="comment-input" variant="label-hidden" label="Textarea field with a placeholder" placeholder="type here..." onchange={changeComment}></lightning-textarea>
+          </lightning-layout-item>
+          <lightning-layout-item padding="around-small">
+            <lightning-button variant="brand" label="POST" title="post" onclick={commentPost} class="slds-m-left_x-small"></lightning-button>
+          </lightning-layout-item>
+        </lightning-layout>
+			</lightning-card>
+		</div>
+  </div>
+</template>

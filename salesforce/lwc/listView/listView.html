@@ -1,0 +1,110 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 10-29-2021
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
+<template>
+	<template if:false={showDetail}>
+		<div class="slds-grid slds-wrap">
+			<div class="slds-col slds-size_1-of-2">
+				<lightning-card>
+					<lightning-layout>
+						<lightning-layout-item>
+							<div class="slds-p-left_medium">
+								<lightning-input variant="label-hidden" type="text" data-name="topHaiku" onchange={handletopHaikuChange} placeholder="上の句を入れる..." label="hidden">
+								</lightning-input>
+							</div>
+						</lightning-layout-item>
+						<lightning-layout-item>
+							<lightning-button variant="brand" label="POST" title="POST" onclick={postHaiku} class="slds-m-left_x-small">
+							</lightning-button>
+						</lightning-layout-item>
+					</lightning-layout>
+				</lightning-card>
+			</div>
+			<div class="slds-col slds-size_1-of-2">
+				<lightning-card>
+					<lightning-layout>
+						<lightning-layout-item class="slds-p-left_medium">
+							{getUser.nickName}
+						</lightning-layout-item>
+						<lightning-layout-item class="slds-p-left_medium">
+							<lightning-combobox  variant="label-hidden" value={Language} options={LanguageOptions} onchange={handleLanguageChange}>
+								　　　</lightning-combobox>
+						</lightning-layout-item>
+						<lightning-layout-item>
+							<lightning-button variant="brand" label="Change" title="change" onclick={changeLanguage}
+								class="slds-m-left_x-small">
+							</lightning-button>
+						</lightning-layout-item>
+					</lightning-layout>
+				</lightning-card>
+			</div>
+			<div class="slds-col slds-size_1-of-2">
+				<lightning-card>
+					<h3 slot="title">
+						<lightning-icon icon-name="utility:trending" size="small"></lightning-icon>
+						Trending
+					</h3>
+					<template for:each={trendList} for:item="trend">
+						<lightning-layout key={trend.HaikuId}>
+							<lightning-layout-item padding="around-small">
+								<template if:false={showTranslate}>
+									<div class="header-column">
+										<lightning-button variant="base" key={trend.HaikuId} label={trend.OriginalContent} title={trend.HaikuId} onclick={handleClick} class="slds-m-left_x-small"></lightning-button>
+									</div>
+								</template>
+								<template if:true={showTranslate}>
+									<div class="header-column">
+										<lightning-button variant="base" key={trend.HaikuId} label={trend.TranslateContent} title={trend.HaikuId} onclick={handleClick} class="slds-m-left_x-small"></lightning-button>
+									</div>
+								</template>
+							</lightning-layout-item>
+							<lightning-layout-item padding="around-small">
+								<div class="header-column">
+									{trend.NickName}
+								</div>
+							</lightning-layout-item>
+							<lightning-layout-item padding="around-small">
+								<lightning-badge label={trend.VoteTotal} icon-name="utility:like"></lightning-badge>
+							</lightning-layout-item>
+							<lightning-layout-item padding="around-small">
+								<lightning-badge label={trend.CommentTotal} icon-name="utility:comments"></lightning-badge>
+							</lightning-layout-item>
+						</lightning-layout>
+					</template>
+				</lightning-card>
+			</div>
+			<div class="slds-col slds-size_1-of-2">
+				<lightning-card>
+					<h3 slot="title">
+						<lightning-icon icon-name="utility:trending" size="small"></lightning-icon>
+						Latest
+					</h3>
+					<template for:each={LatestList} for:item="Latest">
+						<lightning-layout key={Latest.HaikuId}>
+							<lightning-layout-item padding="around-small">
+								<div class="header-column" if:false={showTranslate}>
+									<lightning-button key={Latest.HaikuId} variant="base" label={Latest.OriginalContent} title={Latest.HaikuId} onclick={handleClick} class="slds-m-left_x-small"></lightning-button>
+								</div>
+								<div class="header-column" if:true={showTranslate}>
+									<lightning-button key={Latest.HaikuId} variant="base" label={Latest.TranslateContent} title={Latest.HaikuId} onclick={handleClick} class="slds-m-left_x-small"></lightning-button>
+								</div>
+							</lightning-layout-item>
+							<lightning-layout-item padding="around-small">
+								<div class="header-column">
+									{Latest.NickName}
+								</div>
+							</lightning-layout-item>
+						</lightning-layout>
+					</template>
+				</lightning-card>
+			</div>
+		</div>
+	</template>
+	<template if:true={showDetail}>
+		<c-haiku-detail get-haiku-id={haikuId} onreturn={progressValueChange}></c-haiku-detail>
+	</template>
+</template>

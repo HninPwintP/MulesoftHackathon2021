@@ -1,0 +1,51 @@
+<!--
+  @description       : 
+  @author            : ChangeMeIn@UserSettingsUnder.SFDoc
+  @group             : 
+  @last modified on  : 10-31-2021
+  @last modified by  : ChangeMeIn@UserSettingsUnder.SFDoc
+-->
+<template>
+	<div class="app slds-p-around_x-large">
+		<div class="slds-align_absolute-center">
+			<img src={headerBackgroundImg}>
+		</div>
+		<template if:true={showError}>
+			<font color="red"> {errorMessage}</font>
+		</template>
+		<template if:false={isListView}>
+			<template if:true={issignup}>
+				<h4 class="slds-align_absolute-center">Create a New Account</h4>
+			</template>
+			<!-- ユーザ名 -->
+			<lightning-input type="text" label="UserName" data-name="inputUserName" onchange={handleUserNameChange} required={issignup}>
+			</lightning-input>
+			<!-- パスワード -->
+			<lightning-input type="password" label="Password" data-name="inputPassword" onchange={handlePasswordChange} required={issignup}>
+			</lightning-input>
+			<template if:false={issignup}>
+				<!-- ログイン -->
+				<lightning-button variant="brand" label="Log In" title="Login" onclick={login}
+					class="slds-align_absolute-center slds-m-top_medium"></lightning-button>
+				<lightning-button variant="base" label="Sign Up" title="Sign Up" onclick={signupflg} class="slds-m-left_x-small">
+				</lightning-button>
+			</template>
+			<template if:true={issignup}>
+				<!-- nickName -->
+				<lightning-input type="text" label="NickName" name="inputNickName" onchange={handleNickNameChange} required={issignup}>
+				</lightning-input>
+				<!-- Language -->
+				<lightning-combobox label="Language" value={Language} options={LanguageOptions} onchange={handleLanguageChange}>
+				</lightning-combobox>
+				<!-- Sign Up -->
+				<lightning-button variant="brand" label="Sign Up" title="Signup" onclick={signup}
+					class="slds-align_absolute-center slds-m-top_medium"></lightning-button>
+				<lightning-button variant="base" label="Already have an account" title="alreadyHavaAccount" onclick={alreadyHaveAccount}
+					class="slds-align_absolute-center slds-m-top_medium"></lightning-button>
+			</template>
+	    </template>
+		<template if:true={isListView}>
+            <c-list-view get-user={user}></c-list-view>
+        </template>
+	</div>
+</template>
