@@ -1,0 +1,706 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:db="http://www.mulesoft.org/schema/mule/db" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:tls="http://www.mulesoft.org/schema/mule/tls" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/tls http://www.mulesoft.org/schema/mule/tls/current/mule-tls.xsd">
+    <http:listener-config name="haiku-db-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="haiku-db-api-config" api="haiku-db-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <db:config name="Database_Config" doc:name="Database Config" doc:id="efb16ef4-d448-464a-84ce-03110f42d3d8">
+        <db:generic-connection url="jdbc:postgresql://mulehack.cslgcjmynmc5.ap-northeast-1.rds.amazonaws.com:5432/haikudb"/>
+    </db:config>
+    <flow name="haiku-db-api-main">
+        <http:listener config-ref="haiku-db-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="haiku-db-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="haiku-db-api-console">
+        <http:listener config-ref="haiku-db-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="haiku-db-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="delete:\Comment\(ID):haiku-db-api-config">
+        <db:delete doc:name="Delete" doc:id="a2fe1e16-82e9-4268-a0ec-ac05da40cbc5" config-ref="Database_Config" target="deleteresult">
+            <db:sql><![CDATA[Delete from "public"."Comment" Where "CommentId" =:Id]]></db:sql>
+            <db:input-parameters><![CDATA[#[{Id:attributes.uriParams.'ID'}]]]></db:input-parameters>
+        </db:delete>
+        <choice doc:name="Choice" doc:id="0fc577ce-192d-477d-bf41-bbf8030502b6">
+            <when expression="#[vars.deleteresult==1]">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Deleted comment"
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </when>
+            <otherwise>
+                <raise-error doc:name="Raise error" doc:id="426c132c-b488-4835-b9e9-8b6e410de322" type="QUERY:NOTFOUND" description="comment not found" />
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b4efda32-d0ce-499c-a2c1-b628773c6fc4">
+                <ee:transform doc:name="Transform Message" doc:id="77d0a946-2624-42c4-954b-62fb7263dde7">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"Failed to delete comment"
+	,errorType: error.errorType.namespace
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\Comment:haiku-db-api-config">
+        <db:select doc:name="Select" doc:id="b6ee29a2-7b90-4b05-adeb-28d914a40d59" config-ref="Database_Config">
+            <db:sql><![CDATA[select 
+commentt."CommentId",commentt."Comment",commentt."HaikuId",usert."NickName",commentt."CreatedDate"
+from 
+"public"."Comment" as commentt
+,"public"."User" as usert
+where commentT."UserId" = userT."UserId" and commentt."HaikuId" =:haikuid]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+	haikuid:attributes.queryParams.haikuid
+}]]]></db:input-parameters>
+        </db:select>
+        <choice doc:name="Choice" doc:id="02fe0801-1c0d-4e3d-a24d-82fd8397ac6a">
+            <when expression="#[payload[0].CommentId == null]">
+                <raise-error doc:name="Raise error" doc:id="d065709e-ed46-426d-97eb-fc6304ede20a" type="QUERY:NOTFOUND" description="Comment not found" />
+            </when>
+            <otherwise>
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="8afe212c-7322-4a09-9a99-504e67f232ae">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	Comment: payload01.Comment default "",
+	HaikuId: payload01.HaikuId,
+	NickName: payload01.NickName,
+	CreateDate: payload01.CreatedDate as String,
+	CommentId: payload01.CommentId
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="364bda21-aba4-45a4-891c-c5d3e4b30b99">
+                <ee:transform doc:name="Transform Message" doc:id="f4a3a94b-20d2-45ca-a46e-d0f0425e4c7b">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"Failed to get comment"
+	,errorType: error.errorType.namespace
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\haiku:haiku-db-api-config">
+        <choice doc:name="Choice" doc:id="8f30b0fe-db7a-41f1-898a-40d02d2f057d">
+            <when expression="#[attributes.queryParams.parentid == null]">
+                <db:select doc:name="Select" doc:id="1137edcf-a67b-4f1b-8b57-1f01076cedf4" config-ref="Database_Config">
+                    <db:sql><![CDATA[select 
+h."HaikuId" as HaikuId,
+h."Content" as Content,
+h."CreatedDate" as CreatedDate,
+h."TranslateContent" as TranslateContent,
+h."OriginalLanguage" as OriginalLanguage,
+h."ParentHaikuId" as ParentHaikuId,
+u."NickName" as NickName,
+v.vcount as VoteCount,
+h."level" as level,
+cm."cmcount" as CommentCount
+from
+"public"."Haiku" as h
+left join(select "ParentHaikuId" as hid,count(*) as vcount from "public"."Vote" group by hid) as v on v.hid = h."HaikuId"
+left join "public"."User" as u on u."UserId" = h."UserId"
+left join(select "HaikuId" as hid,count(*) as cmcount from "public"."Comment" group by hid) as cm on cm.hid = h."HaikuId"
+where level =:level 
+order by h."CreatedDate"]]></db:sql>
+                    <db:input-parameters><![CDATA[#[{
+	level:attributes.queryParams.level,
+}]]]></db:input-parameters>
+                </db:select>
+            </when>
+            <otherwise>
+                <db:select doc:name="Select" doc:id="48bf0657-94db-4e40-829f-be2a6c9f6838" config-ref="Database_Config">
+                    <db:sql><![CDATA[select 
+h."HaikuId" as HaikuId,
+h."Content" as Content,
+h."CreatedDate" as CreatedDate,
+h."TranslateContent" as TranslateContent,
+h."OriginalLanguage" as OriginalLanguage,
+h."ParentHaikuId" as ParentHaikuId,
+u."NickName" as NickName,
+v.vcount as VoteCount,
+h."level" as level,
+cm."cmcount" as CommentCount
+from
+"public"."Haiku" as h
+left join(select "ParentHaikuId" as hid,count(*) as vcount from "public"."Vote" group by hid) as v on v.hid = h."HaikuId"
+left join "public"."User" as u on u."UserId" = h."UserId"
+left join(select "HaikuId" as hid,count(*) as cmcount from "public"."Comment" group by hid) as cm on cm.hid = h."HaikuId"
+where level =:level and "ParentHaikuId" =:parentHaikuId
+order by h."CreatedDate"]]></db:sql>
+                    <db:input-parameters><![CDATA[#[{
+	level:attributes.queryParams.level,
+	parentHaikuId:attributes.queryParams.parentid
+}]]]></db:input-parameters>
+                </db:select>
+            </otherwise>
+        </choice>
+        <choice doc:name="Choice" doc:id="679d0e67-59d4-4f46-ab61-d5d2cc174779">
+            <when expression="#[payload[0].haikuid == null]">
+                <raise-error doc:name="Raise error" doc:id="93d1282e-7eb5-491f-af13-0f1963b8657f" type="QUERY:NOTFOUND" description="not found" />
+            </when>
+            <otherwise>
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload map ( payload01 , indexOfPayload01 ) -> {
+	OriginalLanguage: payload01.originallanguage,
+	VoteCount: payload01.votecount default 0,
+	HaikuId: payload01.haikuid,
+	level: payload01.level,
+	Content: payload01.content,
+	ParentHaikuId: payload01.parenthaikuid default 0,
+	TranslateContent: payload01.translatecontent,
+	CommentCount: payload01.commentcount default 0,
+	NickName: payload01.nickname,
+	CreateDate: payload01.createddate as String
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c1a71343-6b2e-4ea8-ac8f-cbc7dcf468f9">
+                <ee:transform doc:name="Transform Message" doc:id="5ffb8dec-b7b3-4885-a658-269a682be21d">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"Failed to get the haiku list"
+	,errorType: error.errorType.identifier
+	,errorDetail:error.description
+
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\haiku\(ID):haiku-db-api-config">
+        <db:select doc:name="Select Vote" doc:id="06647a35-3585-405d-886c-3ec2a1ac7632" config-ref="Database_Config" target="selectVoteResult">
+			<db:sql ><![CDATA[select "HaikuId" from "public"."Vote" where "ParentHaikuId" =:haikuid and "UserId" = :userId]]></db:sql>
+			<db:input-parameters ><![CDATA[#[{
+	haikuid:attributes.uriParams.'ID',
+	userId :attributes.queryParams.'userId'
+}]]]></db:input-parameters>
+		</db:select>
+		<db:select doc:name="Select" doc:id="9e7695bb-8288-45ea-a7af-d174fe182ae0" config-ref="Database_Config">
+            <db:sql><![CDATA[SELECT 
+top.THaikuId,top.TContent,top.TCreatedDate,top.TTranslateContent,top.TOriginalLanguage,top.TParentHaikuId,top.TNickName,top.TVoteCount,top.Tlevel,top.TCommentCount,
+top.MHaikuId,top.MContent,top.MCreatedDate,top.MTranslateContent,top.MOriginalLanguage,top.MParentHaikuId,top.MNickName,top.MVoteCount,top.Mlevel,top.MCommentCount,
+Bottom.BHaikuId,Bottom.BContent,Bottom.BCreatedDate,Bottom.BTranslateContent,Bottom.BOriginalLanguage,Bottom.BParentHaikuId,Bottom.BNickName,Bottom.BVoteCount,Bottom.Blevel,Bottom.BCommentCount 
+FROM
+(SELECT 
+t.THaikuId,t.TContent,t.TCreatedDate,t.TTranslateContent,t.TOriginalLanguage,t.TParentHaikuId,t.TNickName,t.TVoteCount,t.Tlevel,t.TCommentCount,
+m.MHaikuId,m.MContent,m.MCreatedDate,m.MTranslateContent,m.MOriginalLanguage,m.MParentHaikuId,m.MNickName,m.MVoteCount,m.Mlevel,m.MCommentCount
+FROM
+(select 
+h."HaikuId" as THaikuId,
+h."Content" as TContent,
+h."CreatedDate" as TCreatedDate,
+h."TranslateContent" as TTranslateContent,
+h."OriginalLanguage" as TOriginalLanguage,
+h."ParentHaikuId" as TParentHaikuId,
+u."NickName" as TNickName,
+v.vcount as TVoteCount,
+h."level" as Tlevel,
+cm."cmcount" as TCommentCount
+from
+"public"."Haiku" as h
+left join(select "HaikuId" as hid,count(*) as vcount from "public"."Vote" group by hid) as v on v.hid = h."HaikuId"
+left join "public"."User" as u on u."UserId" = h."UserId"
+left join(select "HaikuId" as hid,count(*) as cmcount from "public"."Comment" group by hid) as cm on cm.hid = h."HaikuId"
+where "level" ='top' and "HaikuId" = :Id
+ order by h."CreatedDate") t
+LEFT JOIN
+(select 
+h."HaikuId" as MHaikuId,
+h."Content" as MContent,
+h."CreatedDate" as MCreatedDate,
+h."TranslateContent" as MTranslateContent,
+h."OriginalLanguage" as MOriginalLanguage,
+h."ParentHaikuId" as MParentHaikuId,
+u."NickName" as MNickName,
+v.vcount as MVoteCount,
+h."level" as Mlevel,
+cm."cmcount" as MCommentCount
+from
+"public"."Haiku" as h
+left join(select "HaikuId" as hid,count(*) as vcount from "public"."Vote" group by hid) as v on v.hid = h."HaikuId"
+left join "public"."User" as u on u."UserId" = h."UserId"
+left join(select "HaikuId" as hid,count(*) as cmcount from "public"."Comment" group by hid) as cm on cm.hid = h."HaikuId"
+where "level" ='mid'
+ order by h."CreatedDate") m
+ON t.THaikuId = m.MParentHaikuId) Top
+LEFT JOIN
+(SELECT 
+m.MHaikuId,m.MContent,m.MCreatedDate,m.MTranslateContent,m.MParentHaikuId,m.MNickName,m.MVoteCount,m.Mlevel,m.MCommentCount,
+b.BHaikuId,b.BParentHaikuId,b.BContent,b.BCreatedDate,b.BTranslateContent,b.BOriginalLanguage,b.BNickName,b.BVoteCount,b.Blevel,b.BCommentCount
+FROM
+(select 
+h."HaikuId" as MHaikuId,
+h."Content" as MContent,
+h."CreatedDate" as MCreatedDate,
+h."TranslateContent" as MTranslateContent,
+h."OriginalLanguage" as MOriginalLanguage,
+h."ParentHaikuId" as MParentHaikuId,
+u."NickName" as MNickName,
+v.vcount as MVoteCount,
+h."level" as Mlevel,
+cm."cmcount" as MCommentCount
+from
+"public"."Haiku" as h
+left join(select "HaikuId" as hid,count(*) as vcount from "public"."Vote" group by hid) as v on v.hid = h."HaikuId"
+left join "public"."User" as u on u."UserId" = h."UserId"
+left join(select "HaikuId" as hid,count(*) as cmcount from "public"."Comment" group by hid) as cm on cm.hid = h."HaikuId"
+where "level" ='mid'
+ order by h."CreatedDate") m
+LEFT JOIN
+(select 
+h."HaikuId" as BHaikuId,
+h."Content" as BContent,
+h."CreatedDate" as BCreatedDate,
+h."TranslateContent" as BTranslateContent,
+h."OriginalLanguage" as BOriginalLanguage,
+h."ParentHaikuId" as BParentHaikuId,
+u."NickName" as BNickName,
+v.vcount as BVoteCount,
+h."level" as Blevel,
+cm."cmcount" as BCommentCount
+from
+"public"."Haiku" as h
+left join(select "HaikuId" as hid,count(*) as vcount from "public"."Vote" group by hid) as v on v.hid = h."HaikuId"
+left join "public"."User" as u on u."UserId" = h."UserId"
+left join(select "HaikuId" as hid,count(*) as cmcount from "public"."Comment" group by hid) as cm on cm.hid = h."HaikuId"
+where "level" ='btm'
+ order by h."CreatedDate") b
+ON m.MHaikuId = b.BParentHaikuId) bottom
+ON top.MHaikuId = bottom.MHaikuId]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+	Id:attributes.uriParams.'ID'
+}]]]></db:input-parameters>
+        </db:select>
+        <choice doc:name="Choice" doc:id="2fb50bd4-7d55-432c-a87b-800515a29861">
+            <when expression="#[payload == null]">
+                <raise-error doc:name="Raise error" doc:id="4f67cf91-7afa-48c5-82b3-0307f0b75a33" type="QUERY:NOTFOUND" description="No result row" />
+            </when>
+            <otherwise>
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+var voteList = flatten(vars.selectVoteResult.HaikuId)
+---
+{
+  "HaikuId": payload[0].thaikuid,
+  "NickName": payload[0].tnickname,
+  "Content": payload[0].tcontent,
+  "TranslateContent": payload[0].tTranslateContent,
+  "VoteTotal": payload[0].tVoteCount,
+  "CommentTotal": payload[0].tCommentCount,
+  "CreateDate": payload[0].TCreatedDate,
+  "haiku_mid": payload filter($.mhaikuid != null) groupBy $.mhaikuid pluck (value, key) -> {
+	  "HaikuId": value[0].mhaikuid,
+	  "NickName": value[0].mnickname,
+	  "Content": value[0].mcontent,
+	  "TranslateContent": value[0].mTranslateContent,
+	  "VoteTotal": value[0].mVoteCount,
+	  "CommentTotal": value[0].mCommentCount,
+	  "CreateDate": value[0].mCreatedDate,
+	  "IsVoted" : voteList contains value[0].mhaikuid,
+							  "haiku_btm": value filter ($.bhaikuid != null) map ({ "HaikuId": $.bhaikuid,
+											  "NickName": $.bnickname,
+											  "Content": $.bcontent,
+											  "TranslateContent": $.bTranslateContent,
+											  "VoteTotal": $.bVoteCount,
+											  "CommentTotal": $.bCommentCount,
+											  "CreateDate": $.bCreatedDate,
+											  "IsVoted" : voteList contains $.bhaikuid
+														  })
+ }
+} ]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6a7b4634-2c53-4305-ba00-50c2dd069a1d">
+                <ee:transform doc:name="Transform Message" doc:id="fb59e27f-277c-47b7-8741-85c226ea66ec">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"Failed to get haiku"
+	,errorType: error.errorType.identifier
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="post:\Comment:application\json:haiku-db-api-config">
+        <db:insert doc:name="Insert" doc:id="fc493e0b-57b5-4dc6-998f-b2c4352e2f2e" config-ref="Database_Config">
+            <db:sql><![CDATA[Insert into "public"."Comment"
+("Comment","CreatedDate","HaikuId","UserId") 
+VALUES 
+(:Comment,current_timestamp,:HaikuId,:UserId)]]></db:sql>
+            <db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+        </db:insert>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Created a comment"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="8a64b661-1dc2-4ebd-a4f1-017f1ded8abb">
+                <ee:transform doc:name="Transform Message" doc:id="bccccd5a-a808-47e4-9ae1-eb1530588b3b">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"Failed to create comment"
+	,errorType: error.errorType
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="post:\Vote:application\json:haiku-db-api-config">
+        <db:select doc:name="Select" doc:id="2f0df51b-a8dd-446d-a015-959e62d11513" config-ref="Database_Config" target="recordcount">
+            <db:sql><![CDATA[select count(1) as recordcount from "public"."Vote" where "UserId" =:userid and "HaikuId"=:haikuid]]></db:sql>
+            <db:input-parameters><![CDATA[#[{
+	userid:payload.UserId
+	,haikuid:payload.HaikuId
+}]]]></db:input-parameters>
+        </db:select>
+        <choice doc:name="Choice" doc:id="ac0e5a18-df80-4fe1-95e3-5fc50dbf8be0">
+            <when expression="#[vars.recordcount.recordcount[0]==1]">
+                <raise-error doc:name="Raise error" doc:id="0d908b59-3140-41f3-ab0b-6769d8f4d22f" type="QUERY:DUPLICATE" description="Double Vote" />
+            </when>
+            <otherwise>
+                <db:insert doc:name="Insert" doc:id="dc8637c0-6790-4d59-99a7-6c3ee7a2c660" config-ref="Database_Config">
+                    <db:sql><![CDATA[insert into "public"."Vote"("UserId","HaikuId","ParentHaikuId") VALUES 
+(:UserId,:HaikuId,:ParentHaikuId)]]></db:sql>
+                    <db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+                </db:insert>
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Voted"
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="c5e598cd-b06a-4342-bb64-96121d410613">
+                <ee:transform doc:name="Transform Message" doc:id="00907ed0-4bca-446a-b84c-7ca8b30527f7">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"Voting failed"
+	,errorType: error.errorType.identifier
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="post:\haiku:application\json:haiku-db-api-config">
+        <db:insert doc:name="Insert" doc:id="3e5fcc2a-9775-4227-808b-3016d7bcab84" config-ref="Database_Config" autoGenerateKeys="true" target="insertResult">
+            <db:sql><![CDATA[insert into "public"."Haiku"
+("Content","CreatedDate","TranslateContent","OriginalLanguage","ParentHaikuId","UserId","level") VALUES
+(:Content,current_timestamp,:TranslateContent,:OriginalLanguage,:ParentHaikuId,:UserId,:level)]]></db:sql>
+            <db:input-parameters><![CDATA[#[output application/java
+---
+{
+	Content: payload.Content,
+	TranslateContent: payload.TranslateContent,
+	OriginalLanguage: payload.OriginalLanguage,
+	ParentHaikuId: payload.ParentHaikuId,
+	UserId: payload.UserId,
+	level: payload.level
+}]]]></db:input-parameters>
+            <db:auto-generated-keys-column-names>
+                <db:auto-generated-keys-column-name value="HaikuId" />
+            </db:auto-generated-keys-column-names>
+        </db:insert>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload ++ 
+{
+	"OriginalContent": payload.Content,
+  "HaikuId": vars.insertResult.generatedKeys.HaikuId
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6cda1bfa-eba1-4c10-8d49-92ae5b456667">
+                <ee:transform doc:name="Transform Message" doc:id="db51749a-a019-4409-bd74-9b7e609c50c4">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"Failed to create haiku"
+	,errorType: error.errorType
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="post:\user:application\json:haiku-db-api-config">
+        <ee:transform doc:name="Transform Message" doc:id="7ecb0e5f-1e4f-435b-b552-db857237ab1b">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+import dw::Crypto
+output application/json
+---
+{
+	password:Crypto::HMACWith("mulehackosaka" as Binary, payload.password as Binary, "HmacSHA256") 
+	,username:payload.username
+	,nickName:payload.nickName
+	,language:payload.language	
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <db:insert doc:name="Insert" doc:id="b055a4de-c3b5-476e-b4ca-54a84929bc43" config-ref="Database_Config" target="insertResult" autoGenerateKeys="true">
+            <db:sql><![CDATA[insert into "public"."User"
+("UserName","NickName","PassWord","Language") 
+VALUES
+(:username,:nickName,:password,:language)]]></db:sql>
+            <db:input-parameters><![CDATA[#[payload]]]></db:input-parameters>
+            <db:auto-generated-keys-column-names>
+                <db:auto-generated-keys-column-name value="UserId" />
+            </db:auto-generated-keys-column-names>
+        </db:insert>
+        <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+payload ++ 
+{
+  "UserId": vars.insertResult.generatedKeys.UserId
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="dbd912f8-7514-4722-a557-5768b058da80">
+                <ee:transform doc:name="Transform Message" doc:id="78fed1ae-8cc7-4067-88de-20fdd0c68480">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"User creation failed"
+	,errorType: error.errorType.identifier
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\user\(Username):haiku-db-api-config">
+        <db:select doc:name="Select" doc:id="0475c036-5fb5-4170-9bbb-38e6b8272527" config-ref="Database_Config">
+            <db:sql><![CDATA[select "UserId","UserName","PassWord","NickName","Language" from "public"."User" where "UserName" =:Username]]></db:sql>
+            <db:input-parameters><![CDATA[#[{Username:attributes.uriParams.'Username'}]]]></db:input-parameters>
+        </db:select>
+        <choice doc:name="Choice" doc:id="87191fd0-180c-47de-91a1-7b40a366bbd2">
+            <when expression="#[payload[0].UserId ==null]">
+                <raise-error doc:name="Raise error" doc:id="92798df0-3bab-4bc3-813e-633fb975d646" type="QUERY:NOTFOUND" description="Failed to get user" />
+            </when>
+            <otherwise>
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	password: payload[0].PassWord,
+	nickName: payload[0].NickName,
+	language: payload[0].Language,
+	userId: payload[0].UserId,
+	username: payload[0].UserName
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="154c7ceb-4879-460d-8e3e-a5fdb1e55dd7">
+                <ee:transform doc:name="Transform Message" doc:id="6c640217-0e93-4854-a7e7-a89b62c4ccc3">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"Failed to get user"
+	,errorType: error.errorType.identifier
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+</mule>

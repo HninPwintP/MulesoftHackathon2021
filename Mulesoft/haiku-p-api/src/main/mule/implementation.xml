@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:haiku-dbapi="http://www.mulesoft.org/schema/mule/haiku-dbapi"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/haiku-dbapi http://www.mulesoft.org/schema/mule/haiku-dbapi/current/mule-haiku-dbapi.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:request-config name="HTTP_Request_configuration" doc:name="HTTP Request configuration" doc:id="e838e1c1-9562-4093-b7e0-f0163019b372" >
+		<http:request-connection host="translation.googleapis.com" port="443" protocol="HTTPS"/>
+	</http:request-config>
+	<haiku-dbapi:config name="Haiku_DB_API_Config" doc:name="Haiku DB API Config" doc:id="7e8b48fd-8475-4915-8a88-cfd81e7ac899" property_host="haiku-db-api.jp-e1.cloudhub.io" property_port="80" property_protocol="HTTP" property_basePath="/api/"/>
+	<http:request-config name="HTTP_Request_configuration1" doc:name="HTTP Request configuration" doc:id="b56c51b1-5179-463d-83a8-2ba4752176a0" >
+		<http:request-connection protocol="HTTPS" host="oauth2.googleapis.com" port="443" />
+	</http:request-config>
+	<configuration-properties doc:name="Configuration properties" doc:id="a94a92e8-5841-4757-acec-e10d5224ec60" file="haiku.properties" />
+	<flow name="post-translate-Flow" doc:id="67519190-9ced-4247-98a0-9694fcd683f9" >
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="71f4c41f-11ea-4886-ab1e-ecc90fba3a88" variableName="haiku"/>
+		<http:request method="GET" doc:name="Request" doc:id="6166d8f2-5763-420b-bef2-b98e9cfbdd88" config-ref="HTTP_Request_configuration" path="/language/translate/v2">
+			<http:body ><![CDATA[#[vars.haiku]]]></http:body>
+			<http:headers ><![CDATA[#[output application/java
+---
+{
+	"cache-control" : "no-cache",
+	"content-type" : "text/plain",
+	"accept" : "text/plain"
+}]]]></http:headers>
+			<http:query-params ><![CDATA[#[output application/java
+---
+{
+	"source" : vars.haiku.OriginalLanguage,
+	"q" : vars.haiku.Content,
+	"target" : vars.haiku.targetLanguage,
+	"format" : "text",
+	"key" : p('google-translate-api-key')
+}]]]></http:query-params>
+		</http:request>
+		<ee:transform doc:name="Transform Message" doc:id="f078c41e-8121-44a8-a3c5-a288b9ec1bdd" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+	OriginalLanguage: vars.haiku.OriginalLanguage,
+	level: vars.haiku.level,
+	Content: vars.haiku.Content,
+	UserId: vars.haiku.UserId,
+	TranslateContent: payload.data.translations[0].translatedText,
+	(ParentHaikuId: vars.haiku.ParentHaikuId) if(vars.haiku.ParentHaikuId != null)
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<haiku-dbapi:create-haiku doc:name="Create haiku" doc:id="f14bacb3-d1b5-4585-b7cc-f23034f3311b" config-ref="Haiku_DB_API_Config"/>
+	
+</flow>
+
+</mule>

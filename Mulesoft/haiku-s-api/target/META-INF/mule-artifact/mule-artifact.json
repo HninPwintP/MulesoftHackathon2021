@@ -1,0 +1,41 @@
+{
+  "configs": [
+    "haiku-db-api.xml"
+  ],
+  "secureProperties": [],
+  "redeploymentEnabled": true,
+  "name": "com.mycompany:haiku-db-api:1.0.0-SNAPSHOT",
+  "minMuleVersion": "4.3.0",
+  "requiredProduct": "MULE_EE",
+  "classLoaderModelLoaderDescriptor": {
+    "id": "mule",
+    "attributes": {
+      "exportedPackages": [],
+      "exportedResources": [
+        "api/haiku-db-api.raml",
+        "api/Resources/datatypes/commentDataType.raml",
+        "api/Resources/datatypes/commentNoIDDataType.raml",
+        "api/Resources/datatypes/haikuDataType.raml",
+        "api/Resources/datatypes/haikuNoIDDataType.raml",
+        "api/Resources/datatypes/userNoIDType.raml",
+        "api/Resources/datatypes/userType.raml",
+        "api/Resources/datatypes/voteDataType.raml",
+        "api/Resources/examples/commentNoIDExample.raml",
+        "api/Resources/examples/commentsExample.raml",
+        "api/Resources/examples/haikuExample.raml",
+        "api/Resources/examples/haikuNoIDExample.raml",
+        "api/Resources/examples/haikusExample.raml",
+        "api/Resources/examples/userExample.raml",
+        "api/Resources/examples/userNoIDExample.raml",
+        "api/Resources/examples/voteExample.raml",
+        "application-types.xml",
+        "haiku-db-api.xml",
+        "log4j2.xml"
+      ]
+    }
+  },
+  "bundleDescriptorLoader": {
+    "id": "mule",
+    "attributes": {}
+  }
+}

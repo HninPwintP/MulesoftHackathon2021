@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:haiku-dbapi="http://www.mulesoft.org/schema/mule/haiku-dbapi" xmlns:haiku-papi="http://www.mulesoft.org/schema/mule/haiku-papi" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd  http://www.mulesoft.org/schema/mule/haiku-dbapi http://www.mulesoft.org/schema/mule/haiku-dbapi/current/mule-haiku-dbapi.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd http://www.mulesoft.org/schema/mule/haiku-papi http://www.mulesoft.org/schema/mule/haiku-papi/current/mule-haiku-papi.xsd">
+    <http:listener-config name="haiku-api-httpListenerConfig">
+        <http:listener-connection host="0.0.0.0" port="8081" />
+    </http:listener-config>
+    <apikit:config name="haiku-api-config" api="resource::9d5599fd-5db1-4c27-ae5b-cf298f647d71:haiku-api:1.0.15:raml:zip:haiku-api.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
+    <haiku-dbapi:config name="Haiku_DB_API_Config" doc:name="Haiku DB API Config" doc:id="3f09aa19-1c62-4947-b2f6-d9d8aea73f60" property_host="haiku-db-api.jp-e1.cloudhub.io" property_port="80" property_protocol="HTTP" property_basePath="/api/" />
+    <haiku-papi:config name="Haiku_P_API_Config" doc:name="Haiku P API Config" doc:id="a5cad96e-499d-4b8a-bac0-e20df84c4a2c" property_host="haiku-p-api.us-e2.cloudhub.io" property_port="80" property_protocol="HTTP" property_basePath="/api/" />
+    <flow name="haiku-api-main">
+        <http:listener config-ref="haiku-api-httpListenerConfig" path="/api/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:router config-ref="haiku-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:BAD_REQUEST">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Bad request"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">400</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:METHOD_NOT_ALLOWED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Method not allowed"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">405</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_ACCEPTABLE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not acceptable"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">406</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:UNSUPPORTED_MEDIA_TYPE">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Unsupported media type"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">415</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate type="APIKIT:NOT_IMPLEMENTED">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Not Implemented"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">501</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="haiku-api-console">
+        <http:listener config-ref="haiku-api-httpListenerConfig" path="/console/*">
+            <http:response statusCode="#[vars.httpStatus default 200]">
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:response>
+            <http:error-response statusCode="#[vars.httpStatus default 500]">
+                <http:body>#[payload]</http:body>
+                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+            </http:error-response>
+        </http:listener>
+        <apikit:console config-ref="haiku-api-config" />
+        <error-handler>
+            <on-error-propagate type="APIKIT:NOT_FOUND">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{message: "Resource not found"}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables>
+                        <ee:set-variable variableName="httpStatus">404</ee:set-variable>
+                    </ee:variables>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\auth:haiku-api-config">
+        <set-variable value="#[%dw 2.0 &#xA;import dw::Crypto &#xA;output application/java &#xA;--- &#xA;{ &#xA; password:Crypto::HMACWith(&quot;mulehackosaka&quot; as Binary, attributes.queryParams.password as Binary, &quot;HmacSHA256&quot;) &#xA;}]" doc:name="Set Variable" doc:id="dc9b7ba2-6fb2-430e-a0ae-2bee679512bc" variableName="password" />
+        <haiku-dbapi:get-user-by-username doc:name="Get user by username" doc:id="bb00af30-a342-441f-8892-f1e00371a18e" config-ref="Haiku_DB_API_Config" username="#[attributes.queryParams.username]" />
+        <choice doc:name="Choice" doc:id="d3901ce5-f949-4fd4-a50f-a4922d4a99df">
+            <when expression="#[trim(vars.password.password) == trim(payload.password)]">
+                <ee:transform doc:name="Transform Message" doc:id="3e5919f9-cf51-4dd0-be36-7383d77f1cd4">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{	
+	isSuccess:true,
+	userId: payload.userId,
+	username: payload.username,
+	nickName: payload.nickName,
+	language:payload.language
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </when>
+            <otherwise>
+                <raise-error doc:name="Raise error" doc:id="4e19937b-083e-421d-a409-7f25c669d929" type="HAIKU:NOTAUTHENTICATE" />
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="5d41c6fd-5c8e-40b6-9d99-44fda863c6ae" type="HAIKU:NOTAUTHENTICATE">
+                <set-variable value="401" doc:name="Set Variable" doc:id="5c98e739-65fe-4a48-b91c-f59566eb2882" variableName="httpStatus" />
+                <ee:transform doc:name="Transform Message" doc:id="a010edd2-8268-4db4-87f8-474869a08b5f">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"User Auth Not Authenticated"
+	,errorType: error.errorType.identifier
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables />
+                </ee:transform>
+            </on-error-propagate>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="e41c3c73-7827-4a60-ac8b-946875cabf60">
+                <ee:transform doc:name="Transform Message" doc:id="5fef6ce8-c4ac-41ba-a8b9-9af61d78c59c">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"User Auth Not Authenticated"
+	,errorType: error.errorType.identifier
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                    <ee:variables />
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\haiku:haiku-api-config">
+        <set-variable value="#[attributes.queryParams.viewType]" doc:name="Set Variable" doc:id="2faebf44-01e9-462a-81b9-3036cf9f26c8" variableName="viewtype" />
+        <haiku-dbapi:get-haikus level="top" doc:name="Get haikus" doc:id="fdff8f46-a6d7-400b-8d1f-e5594dc2ee9f" config-ref="Haiku_DB_API_Config" />
+        <choice doc:name="Choice" doc:id="8d72b4e1-d468-4996-9142-9da22c358676">
+            <when expression="#[vars.viewtype == 'Trend']">
+                <ee:transform xsi:schemaLocation="http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd" doc:id="0a53ae21-3620-4331-bc15-8a33de92cf1d">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+(payload map ( payload01 , indexOfPayload01 ) -> {
+	OriginalContent: payload01.Content,
+	HaikuId: payload01.HaikuId,
+	VoteTotal: (payload01.VoteCount default 0),
+	TranslateContent: payload01.TranslateContent,
+	CreateDate: payload01.CreateDate,
+	CommentTotal: payload01.CommentCount
+}) orderBy -$.VoteTotal]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </when>
+            <otherwise>
+                <ee:transform doc:name="Transform Message" doc:id="a165fc9c-ddf7-4141-9d19-a920697f8333">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+(payload map ( payload01 , indexOfPayload01 ) -> {
+	OriginalContent: payload01.Content,
+	HaikuId: payload01.HaikuId,
+	VoteTotal: payload01.VoteCount,
+	TranslateContent: payload01.TranslateContent,
+	CreateDate: payload01.CreateDate as DateTime,
+	CommentTotal: payload01.CommentCount
+}) orderBy -$.CreateDate]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </otherwise>
+        </choice>
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="b961d8c3-aff6-45f2-bc34-5712039ee336">
+                <ee:transform doc:name="Transform Message" doc:id="17816aad-9118-4348-ae07-059bf278442e">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	errmsg:"Fail to get Haiku List"
+	,errorType: error.errorType.identifier
+	,errorDetail:error.description
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="get:\haiku\(ID):haiku-api-config">
+        <haiku-dbapi:get-haiku-by-id doc:name="Get haiku by id" doc:id="7cebe962-c7da-4a7a-9737-995174cc52a7" config-ref="Haiku_DB_API_Config" id="#[attributes.uriParams.'ID']" user-id="#[attributes.queryParams.'userId']"/>
+    </flow>
+    <flow name="post:\haiku:application\json:haiku-api-config">
+        <haiku-papi:create-translate doc:name="Create translate" doc:id="917c031d-44a6-4529-87be-373f5fb10a61" config-ref="Haiku_P_API_Config" />
+        <error-handler>
+            <on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="d38af954-1d2a-4e9a-84e4-dfaa04f92abd">
+                <ee:transform doc:name="Transform Message" doc:id="597a1b45-5313-4e65-ab43-c5622958005c">
+                    <ee:message>
+                        <ee:set-payload><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+                    </ee:message>
+                </ee:transform>
+            </on-error-propagate>
+        </error-handler>
+    </flow>
+    <flow name="delete:\Comment\(ID):haiku-api-config">
+        <haiku-dbapi:delete-comment-by-id doc:name="Delete comment by id" doc:id="68b2d9d5-8adf-4637-859f-62806d6a72bb" config-ref="Haiku_DB_API_Config" id="#[attributes.uriParams.'ID']" />
+        <ee:transform xsi:schemaLocation="
+http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd 
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+            <ee:message>
+                <ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+  message: "Comment Deleted"
+}]]></ee:set-payload>
+            </ee:message>
+        </ee:transform>
+    </flow>
+    <flow name="get:\Comment:haiku-api-config">
+		<haiku-dbapi:get-comments doc:name="Get comments" doc:id="7e0d8421-a947-4594-9e03-059dcb558a10" config-ref="Haiku_DB_API_Config" haikuid="#[attributes.queryParams.'haikuid']"/>
+		<ee:transform doc:name="Transform Message" doc:id="aad685f4-be7b-4d1c-a546-aeae3480eecb" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+(payload map ( payload01 , indexOfPayload01 ) -> {
+	Comment: payload01.Comment,
+	HaikuId: payload01.HaikuId,
+	NickName: payload01.NickName,
+	CreateDate: payload01.CreateDate as DateTime as String {format: "uuuu-MM-dd KK:mm"},
+	CommentId: payload01.CommentId
+})[-1 to 0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="get:\user\(Username):haiku-api-config">
+        <haiku-dbapi:get-user-by-username doc:name="Get user by username" doc:id="fc4d6e5f-4804-42dc-9700-e7791f5c0b4a" config-ref="Haiku_DB_API_Config" username="#[attributes.uriParams.'Username']" />
+    </flow>
+    <flow name="post:\Comment:application\json:haiku-api-config">
+        <haiku-dbapi:create-comment doc:name="Create comment" doc:id="0c1560f6-677f-44e3-b865-d79b8d677526" config-ref="Haiku_DB_API_Config" target="createdResult"/>
+		<haiku-dbapi:get-comments doc:name="Get comments" doc:id="1b7d93cc-f178-4778-915c-e62a94336a58" config-ref="Haiku_DB_API_Config" haikuid="#[payload.HaikuId]" />
+		<ee:transform doc:name="Transform Message" doc:id="b36f2b57-6b0b-42c5-93d2-80742fa9826b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+(payload map ( payload01 , indexOfPayload01 ) -> {
+	Comment: payload01.Comment,
+	HaikuId: payload01.HaikuId,
+	NickName: payload01.NickName,
+	CreateDate: payload01.CreateDate as DateTime as String {format: "uuuu-MM-dd KK:mm"},
+	CommentId: payload01.CommentId
+})[-1 to 0]]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+    </flow>
+    <flow name="post:\Vote:application\json:haiku-api-config">
+        <haiku-dbapi:create-vote doc:name="Create vote" doc:id="cb1b3db5-83b3-46ed-9327-438f7efcc274" config-ref="Haiku_DB_API_Config" />
+    </flow>
+    <flow name="post:\user:application\json:haiku-api-config">
+        <haiku-dbapi:create-user doc:name="Create user" doc:id="37e6c295-dda8-4612-b848-b34e555321ff" config-ref="Haiku_DB_API_Config" />
+    </flow>
+</mule>

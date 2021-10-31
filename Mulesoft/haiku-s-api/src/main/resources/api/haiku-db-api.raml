@@ -1,0 +1,197 @@
+#%RAML 1.0
+title: Haiku DB API
+
+types:
+  haiku : !include Resources/datatypes/haikuDataType.raml
+  haikuNoID : !include Resources/datatypes/haikuNoIDDataType.raml
+  user: !include Resources/datatypes/userType.raml
+  userNoID: !include Resources/datatypes/userNoIDType.raml
+  comment: !include Resources/datatypes/commentDataType.raml
+  commentNoID: !include Resources/datatypes/commentNoIDDataType.raml
+  vote: !include Resources/datatypes/voteDataType.raml
+
+/haiku:
+  get:
+  # Return haiku list
+    queryParameters:
+      level:
+          enum:
+            - top
+            - mid
+            - btm
+      parentid:
+        required: false
+
+    responses:
+      200:
+        description:
+          value: haiku list
+        body:
+          application/json:
+            type: haiku[]
+            examples:
+              output: !include Resources/examples/haikusExample.raml
+      500:
+        body:
+          application/json:
+            example:
+              errmsg: Failed to get the haiku list
+              errorType: NOTFOUND
+              errordetail: ErrorDetail
+              
+  post:
+  # Crete haiku
+    body:
+      application/json:
+        type: haikuNoID
+        examples:
+          input: !include Resources/examples/haikuNoIDExample.raml
+    responses:
+      201:
+        body:
+          application/json:
+            example:
+              message: Created a haiku
+      500:
+        body:
+          application/json:
+            example:
+              errmsg: Failed to create haiku
+              errorType: NOTFOUND
+              errordetail: ErrorDetail
+
+  /{ID}:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              type: haiku
+              examples:
+                output: !include Resources/examples/haikuExample.raml
+
+        500:
+          body:
+            application/json:
+              example:
+                errmsg: Failed to get haiku
+                errorType: NOTFOUND
+                errordetail: ErrorDetail
+
+/user:
+  /{Username}:
+    get:
+      responses:
+        200:
+          body:
+            application/json:
+              type: user
+              examples:
+                output: !include Resources/examples/userExample.raml
+
+        500:
+          body:
+            application/json:
+              example:
+                errmsg: Failed to get user
+                errorType: NOTFOUND
+                errordetail: ErrorDetail
+  
+  post:
+    body:
+      application/json:
+        type: userNoID
+        examples:
+          input: !include Resources/examples/userNoIDExample.raml
+    responses:
+      201:
+        body:
+          application/json:
+            example:
+              message: Created a user
+      500:
+        body:
+          application/json:
+            example:
+              errmsg: User creation failed
+              errorType: NOTFOUND
+              errordetail: ErrorDetail
+                     
+  
+/Comment:
+  get:
+    queryParameters:
+      haikuid: string
+    responses:
+      200:
+        description:
+          value: Returns a list of comments
+        body:
+          application/json:
+            type: comment[]
+            examples:
+              output: !include Resources/examples/commentsExample.raml
+      500:
+        body:
+          application/json:
+            example:
+              errmsg: Failed to get comments
+              errorType: NOTFOUND
+              errordetail: ErrorDetail
+  post:
+    body:
+      application/json:
+        type: commentNoID
+        examples:
+          input: !include Resources/examples/commentNoIDExample.raml
+    responses:
+      200:
+        body:
+          application/json:
+            example:
+              message: Created a comment
+      500:
+        body:
+          application/json:
+            example:
+              errmsg: Failed to create comment
+              errorType: NOTFOUND
+              errordetail: ErrorDetail
+
+  /{ID}:
+    delete:
+      responses:
+        200:
+          body:
+            application/json:
+              example:
+                message: Deleted comment
+        500:
+          body:
+            application/json:
+              example:
+                errmsg: Failed to delete comment
+                errorType: NOTFOUND
+                errordetail: ErrorDetail
+
+/Vote:
+  post:
+    body:
+      application/json:
+        type: vote
+        examples:
+          input: !include Resources/examples/voteExample.raml
+    responses:
+      200:
+        body:
+          application/json:
+            example:
+              message: Voted
+      500:
+        body:
+          application/json:
+            example:
+              errmsg: Voting failed
+              errorType: DUPLICATE
+              errordetail: ErrorDetail
+ 
